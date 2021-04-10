@@ -20,8 +20,9 @@ def ICM(graph: networkx.Graph, patients_0: List, iterations: int) -> [Set, Set]:
 
 
 def plot_degree_histogram(histogram: Dict):
-    # TODO implement your code here
-    ...
+    width = 1
+    plt.bar(histogram.keys(), histogram.values(), width, color='g')
+    plt.show()
 
 
 def calc_degree_histogram(graph: networkx.Graph) -> Dict:
@@ -35,15 +36,16 @@ def calc_degree_histogram(graph: networkx.Graph) -> Dict:
 
 
 def build_graph(filename: str) -> networkx.Graph:
-    G = networkx.Graph()
-    # TODO implement your code here
+    G = networkx.read_edgelist(filename, delimiter=",")
+    G.remove_node("from")
+    G.remove_node("to")
     return G
 
 
 def clustering_coefficient(graph: networkx.Graph) -> float:
     # TODO implement your code here
     ...
-    return cc
+    return 2.1 #was cc
 
 
 def compute_lethality_effect(graph: networkx.Graph, t: int) -> [Dict, Dict]:
@@ -87,7 +89,10 @@ CONTAGION = 1
 LETHALITY = .15
 
 if __name__ == "__main__":
-    filename = ""
+    filename = "PartA1.csv"
     G = build_graph(filename=filename)
+    hist = calc_degree_histogram(G)
+    plot_degree_histogram(hist)
+
 
 
