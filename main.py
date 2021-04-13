@@ -30,6 +30,21 @@ def calc_degree_histogram(graph: networkx.Graph) -> Dict:
     Example:
     if histogram[1] = 10 -> 10 nodes have only 1 friend
     """
+    #return graph.degree
+    hist = graph.degree
+    degrees_lst = list()
+    degrees_dict = dict()
+    for item in hist:
+        degrees_lst.append(item[1])
+    for i in range(max(degrees_lst) + 1):
+        degrees_dict[i] = 0
+    for item in hist:
+        degrees_dict[item[1]] += 1
+
+    return degrees_dict
+
+
+
     histogram = {}
     # TODO implement your code here
     return histogram
