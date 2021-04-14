@@ -5,6 +5,7 @@ import numpy as np
 import networkx
 import copy
 
+PART_B_C = "PartB-C.csv"
 
 def LTM(graph: networkx.Graph, patients_0: List, iterations: int) -> Set:
     total_infected = set(patients_0)
@@ -51,16 +52,38 @@ def calc_degree_histogram(graph: networkx.Graph) -> Dict:
 
 
 def build_graph(filename: str) -> networkx.Graph:
-    G = networkx.read_edgelist(filename, delimiter=",")
-    G.remove_node("from")
-    G.remove_node("to")
+
+    if filename == PART_B_C:
+        df = pd.read_csv(filename)
+        G = networkx.Graph()
+        for index, row in df.iterrows():
+            G.add_edge(row['from'], row['to'], weight=row['w'])
+    else:
+        G = networkx.read_edgelist(filename, delimiter=",")
+        G.remove_node("from")
+        G.remove_node("to")
+
     return G
 
 
 def clustering_coefficient(graph: networkx.Graph) -> float:
-    # TODO implement your code here
-    ...
-    return 2.1 #was cc
+    numerator = sum(networkx.triangles(graph).values())
+    denominator = float(calc_triplets(graph))
+    return numerator / denominator
+
+
+def calc_triplets(graph: networkx.Graph) -> float:
+    sum_triplets = 0
+    for node in graph.nodes:
+        num_of_neigbhors = len(graph.adj[node])
+        sum_triplets += calc_choose(num_of_neigbhors, 2)
+
+    return sum_triplets
+
+
+def calc_choose(up: int, down: int) -> float:
+    return np.math.factorial(up) / (np.math.factorial(down) * np.math.factorial(up - down)) if up > 1 else 0
+
 
 
 def compute_lethality_effect(graph: networkx.Graph, t: int) -> [Dict, Dict]:
@@ -104,10 +127,12 @@ CONTAGION = 1
 LETHALITY = .15
 
 if __name__ == "__main__":
-    filename = "PartA1.csv"
+    filename = "PartB-C.csv"
     G = build_graph(filename=filename)
-    hist = calc_degree_histogram(G)
-    plot_degree_histogram(hist)
+    CC = clustering_coefficient(G)
+    print(CC)
+    #hist = calc_degree_histogram(G)
+    #plot_degree_histogram(hist)
 
 
 
