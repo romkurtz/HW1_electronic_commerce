@@ -53,35 +53,38 @@ def ICM(graph: networkx.Graph, patients_0: List, iterations: int) -> [Set, Set]:
         if np.random.random() < LETHALITY:
             deceased_t_minus_1.add(node)
             total_deceased.add(node)
-            graph.remove_node(node)
 
     total_suspected = set(graph.nodes).difference(total_infected)
+    total_suspected_t_minus_1 = total_suspected
 
     for t in range(iterations):
         new_infected = set()
         new_deceased = set()
-        for node in total_suspected:
+        for node in total_suspected_t_minus_1:
             neighbors = graph.neighbors(node)
             for neighbor in neighbors:
                 if neighbor in infected_t_minus_1:
                     prob = min(1, CONTAGION*graph.edges[node][neighbor]['weight']*(1-graph.nodes[node]['concern']))
                     if np.random.random() < prob:
-                        new_infected.add(node)
+                        if np.random.random() < LETHALITY:
+                            new_deceased.add(node)
+                            total_deceased.add(node)
+                        else:
+                            new_infected.add(node)
+                        break
 
-        for node in new_infected:
-            if np.random.random() < LETHALITY:
-                new_deceased.add(node)
-                total_deceased.add(node)
-                graph.remove_node(node)
 
         total_infected = (total_infected.union(new_infected)).difference(total_deceased)
-        total_suspected = total_suspected.difference((total_infected.union(total_deceased)))
+        total_suspected_t_minus_1 = total_suspected_t_minus_1.difference((total_infected.union(total_deceased)))
 
         for node in total_suspected:
-            graph.nodes[node]['concern'] = calc_concern_ICM(set(graph.neighbors(node)), infected_t_minus_1, deceased_t_minus_1)
+            if set(graph.neighbors(node)):
+                graph.nodes[node]['concern'] = calc_concern_ICM(set(graph.neighbors(node)), infected_t_minus_1, deceased_t_minus_1)
 
-        infected_t_minus_1 = new_infected
-        deceased_t_minus_1 = new_deceased
+        infected_t_minus_1 = infected_t_minus_1.union(new_infected)
+        deceased_t_minus_1 = deceased_t_minus_1.union(new_deceased)
+        total_deceased = total_deceased.union(new_deceased)
+        total_infected = total_infected.union(new_infected)
 
     return total_infected, total_deceased
 
@@ -144,9 +147,19 @@ def build_graph(filename: str) -> networkx.Graph:
 
 
 def clustering_coefficient(graph: networkx.Graph) -> float:
-    numerator = sum(networkx.triangles(graph).values())
+    # numerator = sum(networkx.triangles(graph).values())
+    numerator = calc_triangles(graph)
     denominator = float(calc_triplets(graph))
     return numerator / denominator
+
+
+def calc_triangles(graph: networkx.Graph) -> float:
+    sum_triangles = 0
+    for node in graph:
+        for neighbor in graph.neighbors(node):
+            sum_triangles += len(set(graph.neighbors(neighbor)).intersection(set(graph.neighbors(node))))
+
+    return sum_triangles / 2
 
 
 def calc_triplets(graph: networkx.Graph) -> float:
@@ -218,22 +231,19 @@ def test_plot_2_dict():
 
 
 "Global Hyper-parameters"
-CONTAGION = 1
-LETHALITY = .15
+CONTAGION = .8
+LETHALITY = .2
 
 if __name__ == "__main__":
-    test_plot_2_dict()
+    # test_plot_2_dict()
     filename = "PartB-C.csv"
     G = build_graph(filename=filename)
-    plot_degree_histogram(calc_degree_histogram(G))
-    """df = pd.read_csv('patients0.csv')
+    # print(clustering_coefficient(G))
+    df = pd.read_csv('patients0.csv', header=None)
     df_lst = [val[0] for val in df.values.tolist()]
-    bb = len(LTM(G, df_lst[:50], 6))
-    print(bb)
-    CC = clustering_coefficient(G)
-    print(CC)
-    hist = calc_degree_histogram(G)
-    plot_degree_histogram(hist)"""
+    # print(len(LTM(G, df_lst[:20], 6)))
+    infected, deceases = ICM(G, df_lst[:50], 6)
+    print("infected: ", len(infected), " deceases: ", len(deceases))
 
 
 
