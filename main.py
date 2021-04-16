@@ -44,27 +44,26 @@ def calc_concern_LTM(neighbors: set, patients: set) -> float:
 
 def ICM(graph: networkx.Graph, patients_0: List, iterations: int) -> [Set, Set]:
     total_deceased = set()
-    deceased_t_minus_1 = set()
-    infected_t_minus_1 = set()
+
     for node in graph:
         graph.nodes[node]['concern'] = 0
     total_infected = set(patients_0)
     for node in total_infected:
         if np.random.random() < LETHALITY:
-            deceased_t_minus_1.add(node)
             total_deceased.add(node)
 
     total_suspected = set(graph.nodes).difference(total_infected)
-    total_suspected_t_minus_1 = total_suspected
+    prev_infected = total_infected.difference(total_deceased)
+    prev_deceased = copy.deepcopy(total_deceased)
 
     for t in range(iterations):
         new_infected = set()
         new_deceased = set()
-        for node in total_suspected_t_minus_1:
+        for node in total_suspected:
             neighbors = graph.neighbors(node)
             for neighbor in neighbors:
-                if neighbor in infected_t_minus_1:
-                    prob = min(1, CONTAGION*graph.edges[node][neighbor]['weight']*(1-graph.nodes[node]['concern']))
+                if neighbor in prev_infected:
+                    prob = min(1, CONTAGION*graph.edges[node, neighbor]['weight']*(1-graph.nodes[node]['concern']))
                     if np.random.random() < prob:
                         if np.random.random() < LETHALITY:
                             new_deceased.add(node)
@@ -73,18 +72,15 @@ def ICM(graph: networkx.Graph, patients_0: List, iterations: int) -> [Set, Set]:
                             new_infected.add(node)
                         break
 
-
+        infected_for_calc_concern = total_infected.difference(total_deceased)
         total_infected = (total_infected.union(new_infected)).difference(total_deceased)
-        total_suspected_t_minus_1 = total_suspected_t_minus_1.difference((total_infected.union(total_deceased)))
+        total_suspected = total_suspected.difference((total_infected.union(total_deceased)))
 
         for node in total_suspected:
-            if set(graph.neighbors(node)):
-                graph.nodes[node]['concern'] = calc_concern_ICM(set(graph.neighbors(node)), infected_t_minus_1, deceased_t_minus_1)
+            graph.nodes[node]['concern'] = calc_concern_ICM(set(graph.neighbors(node)), infected_for_calc_concern, prev_deceased)
 
-        infected_t_minus_1 = infected_t_minus_1.union(new_infected)
-        deceased_t_minus_1 = deceased_t_minus_1.union(new_deceased)
-        total_deceased = total_deceased.union(new_deceased)
-        total_infected = total_infected.union(new_infected)
+        prev_infected = new_infected
+        prev_deceased = prev_deceased.union(new_deceased)
 
     return total_infected, total_deceased
 
